@@ -73,40 +73,34 @@ for hardware_file in "$HARDWARE_DIR"/*; do
         # 复制硬件文件到hard_acc.txt
         cp "$hardware_file" "$single_test_dir/hard_acc.txt"
         
-        # 运行程序，使用临时输出目录
-        temp_output_dir="$OUTPUT_BASE_DIR/temp_$basename_no_ext"
-        mkdir -p "$temp_output_dir"
-        
-        if $MICROCODE "$hardware_file" "$SOFTWARE_FILE" "$temp_output_dir"; then
+        # 运行程序，使用single_test目录作为输出目录
+        if $MICROCODE "$hardware_file" "$SOFTWARE_FILE" "$single_test_dir"; then
             echo "✓ 成功处理: $filename"
             success_count=$((success_count + 1))
             
-            # 检查是否有匹配结果
-            if [ -d "$temp_output_dir" ] && [ "$(ls -A "$temp_output_dir" 2>/dev/null)" ]; then
-                # 有匹配结果，将结果移动到hard_acc目录
-                for match_file in "$temp_output_dir"/*.txt; do
-                    if [ -f "$match_file" ]; then
-                        # 获取匹配文件名
-                        match_filename=$(basename "$match_file")
-                        # 移动到hard_acc目录
-                        mv "$match_file" "$hard_acc_dir/"
-                        echo "  ✓ 匹配结果: $match_filename"
-                    fi
-                done
-                
-                # 清理临时目录
-                rm -rf "$temp_output_dir"
+            # 检查是否有匹配结果文件在硬件文件名文件夹中
+            hardware_folder="$single_test_dir/$basename_no_ext"
+            if [ -d "$hardware_folder" ] && [ "$(ls -A "$hardware_folder" 2>/dev/null)" ]; then
+                echo "  ✓ 找到匹配结果"
+                # 将匹配结果从硬件文件名文件夹移动到hard_acc目录
+                mv "$hardware_folder"/* "$hard_acc_dir/" 2>/dev/null
+                # 删除空的硬件文件名文件夹
+                rmdir "$hardware_folder" 2>/dev/null
             else
-                # 没有匹配结果，删除创建的目录结构
                 echo "  ✗ 无匹配结果，删除目录结构"
                 rm -rf "$single_test_dir"
                 no_match_count=$((no_match_count + 1))
             fi
+        elif [ $? -eq 2 ]; then
+            # 退出码2表示没有匹配结果
+            echo "✗ 无匹配结果: $filename"
+            no_match_count=$((no_match_count + 1))
+            # 删除创建的目录结构
+            rm -rf "$single_test_dir"
         else
             echo "✗ 处理失败: $filename"
             error_count=$((error_count + 1))
-            # 清理临时目录和创建的目录结构
-            rm -rf "$temp_output_dir"
+            # 清理创建的目录结构
             rm -rf "$single_test_dir"
         fi
     fi
@@ -134,10 +128,10 @@ if [ $error_count -gt 0 ]; then
         if [ -f "$hardware_file" ]; then
             filename=$(basename "$hardware_file")
             basename_no_ext="${filename%.*}"
-            temp_output_dir="$OUTPUT_BASE_DIR/temp_$basename_no_ext"
+            single_test_dir="$OUTPUT_BASE_DIR/single_test$total_files"
             
-            # 检查临时输出目录是否为空或不存在
-            if [ ! -d "$temp_output_dir" ] || [ -z "$(ls -A "$temp_output_dir" 2>/dev/null)" ]; then
+            # 检查single_test目录是否存在
+            if [ ! -d "$single_test_dir" ]; then
                 echo "  - $filename"
             fi
         fi
