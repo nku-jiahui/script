@@ -3,6 +3,7 @@
 
 import sys
 import re
+import os
 
 def process_ast_file(input_file, output_file):
     """
@@ -13,8 +14,42 @@ def process_ast_file(input_file, output_file):
         output_file (str): 输出文件路径
     """
     try:
-        with open(input_file, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+        # 检查文件是否存在
+        if not os.path.exists(input_file):
+            print(f"错误：文件不存在 - {input_file}")
+            print(f"当前工作目录：{os.getcwd()}")
+            print(f"绝对路径：{os.path.abspath(input_file)}")
+            return False
+        
+        # 检查文件是否可读
+        if not os.access(input_file, os.R_OK):
+            print(f"错误：文件不可读 - {input_file}")
+            return False
+        
+        print(f"正在读取文件：{input_file}")
+        
+        # 尝试不同的编码方式
+        encodings = ['utf-8', 'gbk', 'gb2312', 'latin-1']
+        lines = None
+        
+        for encoding in encodings:
+            try:
+                with open(input_file, 'r', encoding=encoding) as f:
+                    lines = f.readlines()
+                print(f"成功使用编码：{encoding}")
+                break
+            except UnicodeDecodeError:
+                print(f"编码 {encoding} 失败，尝试下一个...")
+                continue
+            except Exception as e:
+                print(f"读取文件时出错（编码 {encoding}）：{e}")
+                continue
+        
+        if lines is None:
+            print("错误：无法使用任何编码读取文件")
+            return False
+        
+        print(f"文件读取成功，共 {len(lines)} 行")
         
         processed_lines = []
         i = 0
@@ -56,21 +91,37 @@ def process_ast_file(input_file, output_file):
                 processed_lines.append(line)
                 i += 1
         
+        # 检查输出目录是否存在
+        output_dir = os.path.dirname(output_file)
+        if output_dir and not os.path.exists(output_dir):
+            print(f"创建输出目录：{output_dir}")
+            os.makedirs(output_dir, exist_ok=True)
+        
         # 写入输出文件
+        print(f"正在写入文件：{output_file}")
         with open(output_file, 'w', encoding='utf-8') as f:
             f.writelines(processed_lines)
         
         print(f"成功处理文件：")
         print(f"  输入文件：{input_file}")
         print(f"  输出文件：{output_file}")
+        print(f"  处理行数：{len(processed_lines)}")
         
         return True
         
     except FileNotFoundError:
         print(f"错误：文件 {input_file} 不存在")
+        print(f"当前工作目录：{os.getcwd()}")
+        print(f"绝对路径：{os.path.abspath(input_file)}")
+        return False
+    except PermissionError:
+        print(f"错误：没有权限访问文件 {input_file}")
         return False
     except Exception as e:
         print(f"错误：{e}")
+        print(f"错误类型：{type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def parse_next_line(line):
@@ -119,12 +170,16 @@ def parse_next_line(line):
 def main():
     """主函数"""
     if len(sys.argv) != 3:
-        print("用法：python process_ast.py <输入文件> <输出文件>")
-        print("示例：python process_ast.py input.ast output.ast")
+        print("用法：python process_680ast_fixed.py <输入文件> <输出文件>")
+        print("示例：python process_680ast_fixed.py input.ast output.ast")
         sys.exit(1)
     
     input_file = sys.argv[1]
     output_file = sys.argv[2]
+    
+    print(f"开始处理...")
+    print(f"输入文件：{input_file}")
+    print(f"输出文件：{output_file}")
     
     success = process_ast_file(input_file, output_file)
     if not success:
