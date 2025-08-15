@@ -43,11 +43,16 @@ echo "=================================="
 
 # 获取所有子文件夹
 subdirs=()
-while IFS= read -r -d '' dir; do
+# 使用更兼容的方法，避免子shell隔离问题
+cd "$SOURCE_DIR" || exit 1
+for dir in */; do
     if [ -d "$dir" ]; then
-        subdirs+=("$dir")
+        # 移除末尾的斜杠
+        dir=${dir%/}
+        subdirs+=("$SOURCE_DIR/$dir")
     fi
-done < <(find "$SOURCE_DIR" -maxdepth 1 -type d -print0 | tail -n +2)
+done
+cd - > /dev/null || exit 1
 
 # 计算子文件夹总数
 total_dirs=${#subdirs[@]}
