@@ -1,0 +1,4 @@
+export LLVM_DIR=/usr/xx/llvm-project/build
+export Z3_DIR=/xxx/z3-master/z3-install
+export Boost_DIR=/xx/boost_1_1_88_0/boost
+export Boost_Version =1.88.0
