@@ -26,7 +26,11 @@ void updateBestMatch(TreeVector* treeVector, TreeVector* targetVector, std::vect
   double similarity = TreeMatcher::calculateTreeVectorSimilarity(treeVector, targetVector);
   
   // 创建匹配结果
-  std::cout<<"mergedCount: "<<mergedCount<<std::endl;
+  std::cout << "  【相似度计算】" << std::endl;
+  std::cout << "    合并节点数: " << mergedCount << std::endl;
+  std::cout << "    计算得到的相似度: " << similarity << std::endl;
+  std::cout << "    位置信息: " << location << std::endl;
+  
   TreeMatchResult result;
   result.similarity = similarity;
   result.location = location;
@@ -51,10 +55,10 @@ void updateBestMatch(TreeVector* treeVector, TreeVector* targetVector, std::vect
     int mergedCount=1,TreeVector *mergedVector=nullptr,std::string location="",int swNodeCount=0)
   {
     //1.是有意义的结点
-    bool isSubtree = node->getIsSubtreeNode();
-    if(!isSubtree){
-      return;
-    }
+    //bool isSubtree = node->getIsSubtreeNode();
+    // if(!isSubtree){
+    //   return;
+    // }
     if(swNodeCount==0){
       swNodeCount = node->getNumChildren();
     }
@@ -65,12 +69,22 @@ void updateBestMatch(TreeVector* treeVector, TreeVector* targetVector, std::vect
       TreeVector* nodeVector = node->getVector();
       if(nodeVector != nullptr){
         mergedVector = nodeVector;
+        std::cout << "  【向量合并】创建新的合并向量" << std::endl;
+      }
+      else{
+        std::cout << "  【错误】节点向量为空，跳过处理" << std::endl;
+        return;
       }
     }
     else{
       TreeVector* nodeVector = node->getVector();
       if(nodeVector != nullptr){
+        std::cout << "  【向量合并】将当前节点向量添加到合并向量中" << std::endl;
         *mergedVector += *nodeVector;
+      }
+      else{
+        std::cout << "  【错误】节点向量为空，跳过处理" << std::endl;
+        return;
       }
     }
     if(location==""){
@@ -80,31 +94,42 @@ void updateBestMatch(TreeVector* treeVector, TreeVector* targetVector, std::vect
       location=node->getLoc();
     }
 
+    // 打印当前状态信息
+    std::cout << "\n=== 节点处理状态 ===" << std::endl;
+    std::cout << "当前节点: " << node->getText() << " (类型: " << static_cast<int>(node->getType()) << ")" << std::endl;
+    std::cout << "软件节点数: " << swNodeCount << " | 目标节点数: " << accNodeCount << std::endl;
+    std::cout << "合并计数: " << mergedCount << " | 位置: " << location << std::endl;
+    std::cout << "合并向量状态: " << (mergedVector ? "已创建" : "未创建") << std::endl;
+    
     if(swNodeCount>accNodeCount*1.5){
-      std::cout<<"swNodeCount>accNodeCount*1.5"<<std::endl;
-      std::cout<<"node text: "<<node->getText()<<std::endl;
-      std::cout<<"swNodeCount: "<<swNodeCount<<std::endl;
-      std::cout<<"accNodeCount: "<<accNodeCount<<std::endl;
+      std::cout << "【CASE 1】软件节点数过多，停止合并并计算相似度" << std::endl;
+      std::cout << "  条件: " << swNodeCount << " > " << accNodeCount << " * 1.5 = " << (accNodeCount*1.5) << std::endl;
       updateBestMatch(mergedVector, targetVector, newresults,location,mergedCount);
+      std::cout << "  已调用 updateBestMatch，相似度计算完成" << std::endl;
       return;
     }
     else if(swNodeCount<accNodeCount*0.5){
-      std::cout<<"swNodeCount<accNodeCount*0.5"<<std::endl;
-      std::cout<<"node text: "<<node->getText()<<std::endl;
-      std::cout<<"swNodeCount: "<<swNodeCount<<std::endl;
-      std::cout<<"accNodeCount: "<<accNodeCount<<std::endl;
+      std::cout << "【CASE 2】软件节点数过少，继续向右合并" << std::endl;
+      std::cout << "  条件: " << swNodeCount << " < " << accNodeCount << " * 0.5 = " << (accNodeCount*0.5) << std::endl;
       if(node->getRight()){
-        std::cout<<"node getRight"<<std::endl;
+        std::cout << "  存在右兄弟节点，递归调用 foo(mergedCount=" << (mergedCount+1) << ")" << std::endl;
         foo(node->getRight(), targetVector, newresults,accNodeCount,mergedCount+1,mergedVector,location,swNodeCount);
+      } else {
+        std::cout << "  无右兄弟节点，停止合并" << std::endl;
       }
       return;
     }
     else{
+      std::cout << "【CASE 3】节点数匹配，计算相似度并继续合并" << std::endl;
+      std::cout << "  条件: " << (accNodeCount*0.5) << " <= " << swNodeCount << " <= " << (accNodeCount*1.5) << std::endl;
       updateBestMatch(mergedVector, targetVector, newresults,location,mergedCount);
-      std::cout<<"符合条件"<<std::endl;
-      
+      std::cout << "  已调用 updateBestMatch，相似度计算完成" << std::endl;
+
       if(node->getRight()){
+        std::cout << "  存在右兄弟节点，继续递归调用 foo(mergedCount=" << (mergedCount+1) << ")" << std::endl;
         foo(node->getRight(), targetVector, newresults,accNodeCount,mergedCount+1,mergedVector,location,swNodeCount);
+      } else {
+        std::cout << "  无右兄弟节点，停止合并" << std::endl;
       }
       return;
     }
@@ -116,14 +141,20 @@ void updateBestMatch(TreeVector* treeVector, TreeVector* targetVector, std::vect
     {
       return;
     }
+    
+    std::cout << "\n【DFS遍历】开始处理节点: " << node->getText() << std::endl;
+    
     auto child = node->getDown();
     while(child)
     {
       DFS(child, targetVector, swNode, newresults,accNodeCount);
       child = child->getRight();
     }
+    
+    std::cout << "【DFS遍历】子节点处理完成，开始处理当前节点" << std::endl;
     int mergedCount = 1;
     foo(node, targetVector, newresults,accNodeCount,mergedCount);
+    std::cout << "【DFS遍历】节点处理完成: " << node->getText() << std::endl;
   }
 
   TreeMatcher::TreeMatcher(const HardwareASTStats &hwStats, size_t maxMatchResults)
