@@ -104,6 +104,13 @@ def add_numbers_to_result(input_file="/Users/jiahui/code/huawei-microcode-mappin
             continue
 
         # 常规变量映射行
+        # 规则：组内每一行中只能有一个'~'，否则视为坏组并整组删除
+        tilde_count = line.count('~')
+        if tilde_count != 0 and tilde_count != 1:
+            current_group_bad = True
+            # 当前行不再继续解析，直接丢弃本组
+            flush_group()
+            continue
         if ' ~ ' in line:
             parts = line.split(' ~ ')
             if len(parts) == 2:
