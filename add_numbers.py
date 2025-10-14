@@ -61,8 +61,23 @@ def add_numbers_to_result(input_file="/Users/jiahui/code/huawei-microcode-mappin
         if line.startswith('$ '):
             # 新组开始：先冲刷上一组
             flush_group()
+            # 规则：组头自身不允许再出现第二个'$'，若出现则视为粘连，跳过第一个并取其后的内容作为真正组头
+            hdr_body = line[2:].strip()
+            if '$' in hdr_body:
+                # 丢弃第一个组头，转而使用其后内容作为下一组头
+                try:
+                    _left, right = hdr_body.split('$', 1)
+                except ValueError:
+                    right = ''
+                if right:
+                    current_group_started = True
+                    current_group_header = right.strip()
+                else:
+                    current_group_started = False
+                    current_group_header = None
+                continue
             current_group_started = True
-            current_group_header = line[2:].strip()
+            current_group_header = hdr_body
             continue
 
         if not current_group_started:
