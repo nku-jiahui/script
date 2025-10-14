@@ -71,13 +71,13 @@ def add_numbers_to_result(input_file="/Users/jiahui/code/huawei-microcode-mappin
             continue
 
         # 处理组内行
-        # 如果出现"$ "在行内，说明发生了".数字$"或其它连接到下一个$的情况
-        if '$ ' in line:
+        # 规则加强：只要该行内出现了符号"$"（且不是组头情况），视为粘连错误，整组删除
+        if '$' in line:
             # 标记当前组为坏组（整组删除）
             current_group_bad = True
-            # 将该行在"$ "处分割，左边丢弃（属于坏组），右边作为新组头
+            # 将该行在第一个"$"处分割，左边丢弃（属于坏组），右边作为新组头
             try:
-                left, right = line.split('$ ', 1)
+                left, right = line.split('$', 1)
             except ValueError:
                 left, right = line, ''
             # 冲刷（删除）当前组
